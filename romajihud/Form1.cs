@@ -16,13 +16,30 @@ namespace romajihud
 	public partial class Form1 : Form
 	{
 		GlobalHotkey hotkey = new GlobalHotkey();
+		bool _visible = false;
+		bool ActuallyVisible
+		{
+			get { return _visible && this.Visible; }
+			set { _visible = value; Visible = value; }
+		}
 
 		public Form1()
 		{
 			InitializeComponent();
 			hotkey.RegisterHotkey(romajihud.ModifierKeys.Control | romajihud.ModifierKeys.Alt, Keys.F12);
 			hotkey.KeyPressed += Hotkey_KeyPressed;
-			this.TopMost = true;
+			SetStyle(ControlStyles.ResizeRedraw | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
+		}
+
+		protected override void SetVisibleCore(bool value)
+		{
+			base.SetVisibleCore(_visible && value);
+		}
+
+		protected override void OnPaint(PaintEventArgs e)
+		{
+			base.OnPaint(e);
+			ControlPaint.DrawBorder(e.Graphics, ClientRectangle, Color.Black, ButtonBorderStyle.Solid);
 		}
 
 		private void Hotkey_KeyPressed(object sender, KeyPressedEventArgs e)
@@ -38,16 +55,18 @@ namespace romajihud
 
 		async void ShowHud(string text)
 		{
-			//this.Show();
-			this.Location = Cursor.Position;
+			this.ActuallyVisible = true;
+			this.TopMost = true;
+			this.Location = new Point(Cursor.Position.X, Cursor.Position.Y - this.Height);
 			label1.Text = text;
 			var stringWidth = this.CreateGraphics().MeasureString(text, label1.Font).Width;
 			this.Width = (int)stringWidth + 10;
 			await Task.Run(() =>
 			{
-				Thread.Sleep(5000);
+				Thread.Sleep(3000);
 			});
-			//this.Hide();
+			this.TopMost = false;
+			this.ActuallyVisible = false;
 		}
 
 		//Strip out everything other than letters and numbers and change to lowercase
